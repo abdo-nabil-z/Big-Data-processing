@@ -7,15 +7,19 @@ import random
 import logging
 
 '''
+the original:
+1 producer  =>  1 istream  => filter  =>  1 ostream  =>  1 consumer
+
+
+
 the following code will follow the following architecture:
 	
-	2 producers => 2 in streams => 2 filters => 1 out stream => 1 consumer
+	2 producers => 2 in streams => 2 filters => 2 filtered streams => 1 out stream => 1 consumer
 
 	
-TemperatureInEgypt   → egyptStream   → EgyptFilter   ┐
-                                                       => outStream → TemperatureSink
-TemperatureInGermany → germanyStream → GermanyFilter ┘
-
+	TemperatureInEgypt   → egyptStream   → EgyptFilter   → egyptFilteredStream   ┐
+																				  => WindowJoinOperator → joinedStream → Sink
+	TemperatureInGermany → germanyStream → GermanyFilter → germanyFilteredStream ┘
 
 '''
 
@@ -89,6 +93,7 @@ class stream:
 		self._mutex.release()
 		return t
 
+############################## MESSAGES
 
 class Message:
 	def __init__(self, timestamp, country, temperature):
@@ -98,6 +103,28 @@ class Message:
 	
 	def __str__(self):
 		return "Message(timestamp=%f, country=%s, temperature=%d)" % (self.timestamp, self.country, self.temperature)
+
+
+class JoinedTemperatureMessage:
+	def __init__(self, timestamp, germany_temperature, egypt_temperature, difference, time_delta):
+		self.timestamp = timestamp
+		self.germany_temperature = germany_temperature
+		self.egypt_temperature = egypt_temperature
+		self.difference = difference
+		self.time_delta = time_delta
+	
+	def __str__(self):
+		return (
+			"JoinedTemperatureMessage(timestamp=%f, germany=%d, egypt=%d, "
+			"difference=%d, time_delta=%f)"
+		) % (
+			self.timestamp,
+			self.germany_temperature,
+			self.egypt_temperature,
+			self.difference,
+			self.time_delta
+		)
+
 
 #######################
 
@@ -146,6 +173,10 @@ def sink(iStream):
 		logging.debug("consumed %s" % str(something))
 		time.sleep(random.random()) # mimic heavy duty
 
+
+##########################   FILTERS  ######################
+
+
 # ex for tuple filter
 def filter(iStream, oStream):
 	while True:
@@ -171,6 +202,7 @@ def filterMinMax(iStream, oStream):
 
 
 def temperatureFilter(iStream, oStream, min_temp):
+	
 	while True:
 		message = iStream.get()
 
@@ -181,36 +213,126 @@ def temperatureFilter(iStream, oStream, min_temp):
 		time.sleep(random.random())
 
 
+#  FIFO  Join
+def temperaturePairJoin(germanyStream, egyptStream, oStream):
+	while True:
+		germanyMessage = germanyStream.get()
+		egyptMessage = egyptStream.get()
+
+		difference = egyptMessage.temperature - germanyMessage.temperature
+		join_timestamp = max(germanyMessage.timestamp, egyptMessage.timestamp)
+
+		joinedMessage = (
+			join_timestamp,
+			germanyMessage.temperature,
+			egyptMessage.temperature,
+			difference
+		)
+
+		logging.debug(
+			"joined Germany=%d and Egypt=%d, difference=%d" %
+			(germanyMessage.temperature, egyptMessage.temperature, difference)
+		)
+
+		oStream.put(joinedMessage)
+
+
+
+# Time window based join
+def temperatureWindowJoin(germanyStream, egyptStream, oStream, window_seconds):
+	while True:
+		germanyMessage = germanyStream.inspect()
+		egyptMessage = egyptStream.inspect()
+
+		# If one stream is empty, wait a little bit and try again
+		if germanyMessage is None or egyptMessage is None:
+			time.sleep(0.05)
+			continue
+
+		time_delta = abs(germanyMessage.timestamp - egyptMessage.timestamp)
+
+		if time_delta <= window_seconds:
+			# They are close enough, so consume both
+			germanyMessage = germanyStream.get()
+			egyptMessage = egyptStream.get()
+
+			difference = egyptMessage.temperature - germanyMessage.temperature
+			join_timestamp = max(germanyMessage.timestamp, egyptMessage.timestamp)
+
+			joinedMessage = JoinedTemperatureMessage(
+				join_timestamp,
+				germanyMessage.temperature,
+				egyptMessage.temperature,
+				difference,
+				time_delta
+			)
+
+			logging.debug("window join produced %s" % str(joinedMessage))
+			oStream.put(joinedMessage)
+
+		else:
+			# They are too far apart.
+			# Drop the older one because it probably will not get a match.
+			if germanyMessage.timestamp < egyptMessage.timestamp:
+				dropped = germanyStream.get()
+				logging.debug(
+					"dropped old Germany message outside window: %s" % str(dropped)
+				)
+			else:
+				dropped = egyptStream.get()
+				logging.debug(
+					"dropped old Egypt message outside window: %s" % str(dropped)
+				)
+
+
 logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] (%(threadName)-10s) %(message)s')
 
 # define two streams with different sizes
 #st1 = stream("Stream 1", 10)
 #st2 = stream("Stream 2", 5)
 
-# define streams
+
+##################  Streams definition  #######################
+# raw streams
 egyptStream = stream("Egypt Temperature Stream", 10)
-germanyStream = stream("Germany Temperature Stream", 10)  #raw streams
+germanyStream = stream("Germany Temperature Stream", 10)
+
+# post filter streams
+egyptFilteredStream = stream("Egypt Filtered Temperature Stream", 10)
+germanyFilteredStream = stream("Germany Filtered Temperature Stream", 10)
+
+# post join stream
+joinedStream = stream("Joined Temperature Stream", 10)
 
 # output streams
 outStream = stream("Filtered Temperature Output Stream", 5)
+
+
+
 
 # create threads for three operators one source (fountain), one filter, and one destination (sink)
 #src = threading.Thread(name='fountain', target=fountain, args=(st1,))
 #dst = threading.Thread(name='sink', target=sink, args=(st2,))
 
+
+#####################  Threads definition  ####################
 MIN_TEMP_EG = 24
 MIN_TEMP_GER= 18
+TIME_DELTA_BETWEEN_THE_READINGS = 1.0
 
 egyptProducer = threading.Thread(name='EgyptProducer',target=TemperatureInEgypt,args=(egyptStream,))
 germanyProducer = threading.Thread(name='GermanyProducer',target=TemperatureInGermany,args=(germanyStream,))
 
-egyptFilter = threading.Thread(name='EgyptFilter', target= temperatureFilter, args=(egyptStream, outStream, MIN_TEMP_GER))
-germanyFilter = threading.Thread(name='GermanyFilter', target= temperatureFilter, args=(germanyStream, outStream, MIN_TEMP_EG))
+egyptFilter = threading.Thread(name='EgyptFilter', target= temperatureFilter, args=(egyptStream, egyptFilteredStream, MIN_TEMP_EG))
+germanyFilter = threading.Thread(name='GermanyFilter', target= temperatureFilter, args=(germanyStream, germanyFilteredStream, MIN_TEMP_GER))
 
-temperatureSink = threading.Thread(name='TemperatureSink', target=sink, args=(outStream,))
+joinThread = threading.Thread(name='WindowJoin',target=temperatureWindowJoin,args=(germanyFilteredStream, egyptFilteredStream, joinedStream, TIME_DELTA_BETWEEN_THE_READINGS))
+
+temperatureSink = threading.Thread(name='TemperatureSink', target=sink, args=(joinedStream,))
 
 
 temperatureSink.start()
+joinThread.start()
 egyptFilter.start()
 germanyFilter.start()
 egyptProducer.start()
