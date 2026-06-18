@@ -17,9 +17,9 @@ the following code will follow the following architecture:
 	2 producers => 2 in streams => 2 filters => 2 filtered streams => 1 out stream => 1 consumer
 
 	
-	TemperatureInEgypt   → egyptStream   → EgyptFilter   → egyptFilteredStream   ┐
-																				  => WindowJoinOperator → joinedStream → Sink
-	TemperatureInGermany → germanyStream → GermanyFilter → germanyFilteredStream ┘
+	TemperatureInEgypt   => egyptStream   => EgyptFilter  => egyptFilteredStream   
+																				  => WindowJoinOperator => joinedStream => Sink
+	TemperatureInGermany => germanyStream => GermanyFilter => germanyFilteredStream 
 
 '''
 
@@ -126,6 +126,23 @@ class JoinedTemperatureMessage:
 		)
 
 
+class SelfJoinMessage:
+    def __init__(self, timestamp, previous_temperature, current_temperature, change):
+        self.timestamp = timestamp
+        self.previous_temperature = previous_temperature
+        self.current_temperature = current_temperature
+        self.change = change
+
+    def __str__(self):
+        return (
+            "SelfJoinMessage(timestamp=%f, previous=%d, current=%d, change=%d)"
+        ) % (
+            self.timestamp,
+            self.previous_temperature,
+            self.current_temperature,
+            self.change
+        )
+
 #######################
 
 # ex for tuple producer
@@ -148,7 +165,7 @@ def TemperatureInEgypt(oStream):
 		ts = datetime.timestamp(datetime.now());
 		message = Message(ts, "Egypt", num)
 		oStream.put(message)
-		logging.debug("Egypt produced %s" % str(message))
+		logging.info("Egypt produced %s" % str(message))
 		time.sleep(random.random()) # mimic heavy duty
 
 
@@ -160,7 +177,7 @@ def TemperatureInGermany(oStream):
 		ts = datetime.timestamp(datetime.now());
 		message = Message(ts, "Germany", num)
 		oStream.put(message)
-		logging.debug("Germany produced %s" % str(message))
+		logging.info("Germany produced %s" % str(message))
 		time.sleep(random.random()) # mimic heavy duty
 
 
@@ -202,16 +219,29 @@ def filterMinMax(iStream, oStream):
 
 
 def temperatureFilter(iStream, oStream, min_temp):
-	
+	window = []
+	SIZE_FLOATING_WINDOW = 4
 	while True:
 		message = iStream.get()
+		window.append(message.temperature)
 
 		if message.temperature >= min_temp:
 			logging.debug("%s filter passed temperature %s" % (message.country, str(message)))
 			oStream.put(message)
+	
+		if len(window) > SIZE_FLOATING_WINDOW:
+			window.pop(0)
+			
+		average = sum(window) / len(window)
+		logging.info("%s Floating average  %s" % (message.country, str(average)))
 
 		time.sleep(random.random())
 
+def streamSplitter(iStream, oStream1, oStream2):
+    while True:
+        message = iStream.get()
+        oStream1.put(message)
+        oStream2.put(message)
 
 #  FIFO  Join
 def temperaturePairJoin(germanyStream, egyptStream, oStream):
@@ -267,7 +297,7 @@ def temperatureWindowJoin(germanyStream, egyptStream, oStream, window_seconds):
 				time_delta
 			)
 
-			logging.debug("window join produced %s" % str(joinedMessage))
+			logging.info("window join produced %s" % str(joinedMessage))
 			oStream.put(joinedMessage)
 
 		else:
@@ -284,8 +314,29 @@ def temperatureWindowJoin(germanyStream, egyptStream, oStream, window_seconds):
 					"dropped old Egypt message outside window: %s" % str(dropped)
 				)
 
+def temperatureSelfJoin(iStream, oStream, min_change):
+    last_message = None
 
-logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] (%(threadName)-10s) %(message)s')
+    while True:
+        current_message = iStream.get()
+
+        if last_message is not None:
+            change = current_message.temperature - last_message.temperature
+
+            if abs(change) >= min_change:
+                joinedMessage = SelfJoinMessage(
+                    current_message.timestamp,
+                    last_message.temperature,
+                    current_message.temperature,
+                    change
+                )
+
+                logging.info("self join produced %s" % str(joinedMessage))
+                oStream.put(joinedMessage)
+
+        last_message = current_message
+
+logging.basicConfig(level=logging.INFO, format='[%(levelname)s] (%(threadName)-10s) %(message)s')
 
 # define two streams with different sizes
 #st1 = stream("Stream 1", 10)
@@ -304,6 +355,13 @@ germanyFilteredStream = stream("Germany Filtered Temperature Stream", 10)
 # post join stream
 joinedStream = stream("Joined Temperature Stream", 10)
 
+# split streams for Germany filtered data
+germanyWindowJoinStream = stream("Germany Window Join Stream", 10)
+germanySelfJoinStream = stream("Germany Self Join Stream", 10)
+
+# self join output stream
+selfJoinedStream = stream("Self Joined Temperature Stream", 10)
+
 # output streams
 outStream = stream("Filtered Temperature Output Stream", 5)
 
@@ -319,6 +377,7 @@ outStream = stream("Filtered Temperature Output Stream", 5)
 MIN_TEMP_EG = 24
 MIN_TEMP_GER= 18
 TIME_DELTA_BETWEEN_THE_READINGS = 1.0
+MIN_CHANGE_FOR_SELF_JOIN = 2
 
 egyptProducer = threading.Thread(name='EgyptProducer',target=TemperatureInEgypt,args=(egyptStream,))
 germanyProducer = threading.Thread(name='GermanyProducer',target=TemperatureInGermany,args=(germanyStream,))
@@ -326,17 +385,37 @@ germanyProducer = threading.Thread(name='GermanyProducer',target=TemperatureInGe
 egyptFilter = threading.Thread(name='EgyptFilter', target= temperatureFilter, args=(egyptStream, egyptFilteredStream, MIN_TEMP_EG))
 germanyFilter = threading.Thread(name='GermanyFilter', target= temperatureFilter, args=(germanyStream, germanyFilteredStream, MIN_TEMP_GER))
 
-joinThread = threading.Thread(name='WindowJoin',target=temperatureWindowJoin,args=(germanyFilteredStream, egyptFilteredStream, joinedStream, TIME_DELTA_BETWEEN_THE_READINGS))
+splitterThread = threading.Thread(name='GermanySplitter',target=streamSplitter,args=(germanyFilteredStream, germanyWindowJoinStream, germanySelfJoinStream))
+
+#joinThread = threading.Thread(name='WindowJoin',target=temperatureWindowJoin,args=(germanyFilteredStream, egyptFilteredStream, joinedStream, TIME_DELTA_BETWEEN_THE_READINGS))
+joinThread = threading.Thread(name='WindowJoin',target=temperatureWindowJoin,args=(germanyWindowJoinStream, egyptFilteredStream, joinedStream, TIME_DELTA_BETWEEN_THE_READINGS))
+
+selfJoinThread = threading.Thread(name='SelfJoin',target=temperatureSelfJoin,args=(germanySelfJoinStream, selfJoinedStream, MIN_CHANGE_FOR_SELF_JOIN))
 
 temperatureSink = threading.Thread(name='TemperatureSink', target=sink, args=(joinedStream,))
 
+selfJoinSink = threading.Thread(name='SelfJoinSink',target=sink,args=(selfJoinedStream,))
 
 temperatureSink.start()
+selfJoinSink.start()
+
+joinThread.start()
+selfJoinThread.start()
+splitterThread.start()
+
+egyptFilter.start()
+germanyFilter.start()
+
+egyptProducer.start()
+germanyProducer.start()
+
+
+""" temperatureSink.start()
 joinThread.start()
 egyptFilter.start()
 germanyFilter.start()
 egyptProducer.start()
-germanyProducer.start()
+germanyProducer.start() """
 
 
 # vim: ts=3 sw=3 sts=3 noet
