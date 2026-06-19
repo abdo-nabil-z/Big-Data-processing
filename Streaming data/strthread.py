@@ -379,22 +379,22 @@ MIN_TEMP_GER= 18
 TIME_DELTA_BETWEEN_THE_READINGS = 1.0
 MIN_CHANGE_FOR_SELF_JOIN = 2
 
-egyptProducer = threading.Thread(name='EgyptProducer',target=TemperatureInEgypt,args=(egyptStream,))
-germanyProducer = threading.Thread(name='GermanyProducer',target=TemperatureInGermany,args=(germanyStream,))
+egyptProducer = threading.Thread(name='EgyptProducer',target=TemperatureInEgypt,args=(egyptStream,),daemon=True)
+germanyProducer = threading.Thread(name='GermanyProducer',target=TemperatureInGermany,args=(germanyStream,),daemon=True)
 
-egyptFilter = threading.Thread(name='EgyptFilter', target= temperatureFilter, args=(egyptStream, egyptFilteredStream, MIN_TEMP_EG))
-germanyFilter = threading.Thread(name='GermanyFilter', target= temperatureFilter, args=(germanyStream, germanyFilteredStream, MIN_TEMP_GER))
+egyptFilter = threading.Thread(name='EgyptFilter', target= temperatureFilter, args=(egyptStream, egyptFilteredStream, MIN_TEMP_EG),daemon=True)
+germanyFilter = threading.Thread(name='GermanyFilter', target= temperatureFilter, args=(germanyStream, germanyFilteredStream, MIN_TEMP_GER),daemon=True)
 
-splitterThread = threading.Thread(name='GermanySplitter',target=streamSplitter,args=(germanyFilteredStream, germanyWindowJoinStream, germanySelfJoinStream))
+splitterThread = threading.Thread(name='GermanySplitter',target=streamSplitter,args=(germanyFilteredStream, germanyWindowJoinStream, germanySelfJoinStream),daemon=True)
 
 #joinThread = threading.Thread(name='WindowJoin',target=temperatureWindowJoin,args=(germanyFilteredStream, egyptFilteredStream, joinedStream, TIME_DELTA_BETWEEN_THE_READINGS))
-joinThread = threading.Thread(name='WindowJoin',target=temperatureWindowJoin,args=(germanyWindowJoinStream, egyptFilteredStream, joinedStream, TIME_DELTA_BETWEEN_THE_READINGS))
+joinThread = threading.Thread(name='WindowJoin',target=temperatureWindowJoin,args=(germanyWindowJoinStream, egyptFilteredStream, joinedStream, TIME_DELTA_BETWEEN_THE_READINGS),daemon=True)
 
-selfJoinThread = threading.Thread(name='SelfJoin',target=temperatureSelfJoin,args=(germanySelfJoinStream, selfJoinedStream, MIN_CHANGE_FOR_SELF_JOIN))
+selfJoinThread = threading.Thread(name='SelfJoin',target=temperatureSelfJoin,args=(germanySelfJoinStream, selfJoinedStream, MIN_CHANGE_FOR_SELF_JOIN),daemon=True)
 
-temperatureSink = threading.Thread(name='TemperatureSink', target=sink, args=(joinedStream,))
+temperatureSink = threading.Thread(name='TemperatureSink', target=sink, args=(joinedStream,),daemon=True)
 
-selfJoinSink = threading.Thread(name='SelfJoinSink',target=sink,args=(selfJoinedStream,))
+selfJoinSink = threading.Thread(name='SelfJoinSink',target=sink,args=(selfJoinedStream,),daemon=True)
 
 temperatureSink.start()
 selfJoinSink.start()
@@ -410,6 +410,8 @@ egyptProducer.start()
 germanyProducer.start()
 
 
+
+
 """ temperatureSink.start()
 joinThread.start()
 egyptFilter.start()
@@ -419,3 +421,10 @@ germanyProducer.start() """
 
 
 # vim: ts=3 sw=3 sts=3 noet
+
+
+try:
+	while True:
+		time.sleep(1)
+except KeyboardInterrupt:
+	print("Stopping program...")
