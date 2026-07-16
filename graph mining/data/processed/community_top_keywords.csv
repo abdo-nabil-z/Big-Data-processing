@@ -1,0 +1,160 @@
+louvain_community,keyword,story_count,community_size,percentage
+0,Danish people,12,12,100.0
+0,Däne,12,12,100.0
+0,"Sage, historische",12,12,100.0
+0,historical legends,12,12,100.0
+1,Franzose,96,96,100.0
+1,"Sage, historische",96,96,100.0
+1,historical legends,96,96,100.0
+1,French people,95,96,98.96
+1,from the french period,2,96,2.08
+1,"30-/100-year war, blending",1,96,1.04
+1,Brücke,1,96,1.04
+1,Carwitz-Brücke,1,96,1.04
+1,Carwitz-bridge,1,96,1.04
+1,Danish people,1,96,1.04
+2,Räuber,31,31,100.0
+2,Störtebecker,31,31,100.0
+2,robbers,31,31,100.0
+2,Störtebecker - Gödeke Michel,30,31,96.77
+2,Räubersage,1,31,3.23
+3,Lokalsage,62,62,100.0
+3,Raubritter,62,62,100.0
+3,local legends: varia,62,62,100.0
+3,Robber-knight,41,62,66.13
+3,Robber-knight gen.,21,62,33.87
+3,Berg,1,62,1.61
+3,Etymologie,1,62,1.61
+3,Mountain open,1,62,1.61
+3,local legends: churches and passages,1,62,1.61
+4,"Sage, historische",20,20,100.0
+4,from the french period,20,20,100.0
+4,historical legends,20,20,100.0
+5,Wasser,56,56,100.0
+5,water,56,56,100.0
+5,See (der),33,56,58.93
+5,Opfer,29,56,51.79
+5,ausmessen,23,56,41.07
+5,ablassen,19,56,33.93
+5,Victim,16,56,28.57
+5,"ablassen, See ausmessen etc.",16,56,28.57
+5,"Victim, last hour has come",10,56,17.86
+5,"grundlos, ausmessen etc.",4,56,7.14
+6,"Sage, historische",59,59,100.0
+6,historical legends,59,59,100.0
+6,"30-/100-year war, blending",46,59,77.97
+6,Schweden,14,59,23.73
+6,Sweden,14,59,23.73
+6,"Historic, elderly",1,59,1.69
+7,Räuber,119,122,97.54
+7,Viting,119,122,97.54
+7,robbers,119,122,97.54
+7,Lit.,4,122,3.28
+7,Sohn,4,122,3.28
+7,Viting /raubt Mädchen - 7 Söhne - verraten,4,122,3.28
+7,Volkssage,4,122,3.28
+7,lit.,4,122,3.28
+7,rauben,4,122,3.28
+7,weiblich,4,122,3.28
+8,Berg,66,66,100.0
+8,Lokalsage,66,66,100.0
+8,local legends: varia,66,66,100.0
+8,Mountain open,23,66,34.85
+8,Berg nicht fortschaffen,13,66,19.7
+8,"Mountain: singing, thunder etc.",13,66,19.7
+8,Berge hohl,8,66,12.12
+8,Berg: heilige Berge; Zwerge,3,66,4.55
+8,Mountains,3,66,4.55
+8,Berg vom Riesen zusammengetragen,2,66,3.03
+9,Lokalsage,54,78,69.23
+9,Etymologie,44,78,56.41
+9,local legends: churches and passages,44,78,56.41
+9,"Historic, elderly",26,78,33.33
+9,"Sage, historische",26,78,33.33
+9,historical legends,26,78,33.33
+9,local legends: varia,10,78,12.82
+9,Name,7,78,8.97
+9,Ritter,5,78,6.41
+9,Namenswechsel,4,78,5.13
+10,Berg,47,47,100.0
+10,Riese,47,47,100.0
+10,giants,47,47,100.0
+10,tragen Berge zusammen,47,47,100.0
+10,zusammentragen,47,47,100.0
+10,"Kenntnis von den Wenden, meckl.",1,47,2.13
+10,Mecklenburg,1,47,2.13
+10,"Sage, historische",1,47,2.13
+10,Wenden (Nation),1,47,2.13
+10,historical legends,1,47,2.13
+11,Russe,18,32,56.25
+11,Russian people,18,32,56.25
+11,"Sage, historische",18,32,56.25
+11,historical legends,18,32,56.25
+11,Toter,15,32,46.88
+11,dead,15,32,46.88
+11,kämpfen,15,32,46.88
+11,to fight,15,32,46.88
+12,Fachliteratur,43,82,52.44
+12,Lit.,43,82,52.44
+12,Literature,43,82,52.44
+12,bells,36,82,43.9
+12,Wasser,28,82,34.15
+12,water,28,82,34.15
+12,Volkssage,23,82,28.05
+12,Literatur,16,82,19.51
+12,Tod,16,82,19.51
+12,Totensage,16,82,19.51
+13,Franzose,23,23,100.0
+13,"French people etc., search town",23,23,100.0
+13,Stadt,23,23,100.0
+13,destruction,23,23,100.0
+14,Mecklenburg,47,70,67.14
+14,"Sage, historische",47,70,67.14
+14,historical legends,47,70,67.14
+14,Berg,25,70,35.71
+14,Kaiser,25,70,35.71
+14,"Kenntnis von den Wenden, meckl.",25,70,35.71
+14,Kyffhäuser: Kaiser im Berg,25,70,35.71
+14,Toter,25,70,35.71
+14,Wenden (Nation),25,70,35.71
+14,dead,25,70,35.71
+15,Allg.,48,48,100.0
+15,Gen.,48,48,100.0
+15,"Sage, historische",48,48,100.0
+15,historical legends,48,48,100.0
+15,"30-/100-year war, blending",1,48,2.08
+15,Etymologie,1,48,2.08
+15,Lokalsage,1,48,2.08
+15,Schweden,1,48,2.08
+15,Sweden,1,48,2.08
+15,local legends: churches and passages,1,48,2.08
+16,Volkssage,35,43,81.4
+16,Wilde Jagd,35,43,81.4
+16,wild hunt,35,43,81.4
+16,Name,23,43,53.49
+16,Name: varia,17,43,39.53
+16,Hund,7,43,16.28
+16,Lokalsage,7,43,16.28
+16,local legends,7,43,16.28
+16,Bier,6,43,13.95
+16,Brot,6,43,13.95
+17,Horse shoe etc.,67,67,100.0
+17,Hufeisen,67,67,100.0
+17,Lokalsage,67,67,100.0
+17,local legends: varia,67,67,100.0
+17,"Kenntnis von den Wenden, meckl.",2,67,2.99
+17,Mecklenburg,2,67,2.99
+17,"Sage, historische",2,67,2.99
+17,Wenden (Nation),2,67,2.99
+17,historical legends,2,67,2.99
+17,Name,1,67,1.49
+18,Lokalsage,101,252,40.08
+18,local legends,100,252,39.68
+18,Schatzsage,84,252,33.33
+18,treasure,83,252,32.94
+18,haunting animals,35,252,13.89
+18,Fachliteratur,26,252,10.32
+18,destruction,26,252,10.32
+18,goldene Wiege,26,252,10.32
+18,Untergang: Lit.,25,252,9.92
+18,Untergangssage,25,252,9.92
